@@ -1,0 +1,5 @@
+.local/
+.mypy_cache/
+.vscode/
+
+.env
