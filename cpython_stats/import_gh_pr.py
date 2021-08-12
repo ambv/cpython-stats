@@ -60,7 +60,10 @@ def update_db(db: shelve.Shelf) -> None:
                 # update_in_place(old, pr)
             else:
                 progress.update(task, description=f"Importing {pr_id}")
-                db[pr_id] = new_change_from(pr)
+                try:
+                    db[pr_id] = new_change_from(pr)
+                except Exception as exc:
+                    print(f"[bold red]warning[/bold red]: skipped {pr_id} due to ", exc)
             progress.advance(task)
 
 
@@ -155,10 +158,10 @@ def nice(gh: Github, progress: Progress, task: TaskID) -> None:
         remaining = rl.core.remaining
         limit = rl.core.limit
         reset_ts = rl.core.reset
-        if remaining / limit > 0.5:
+        if remaining / limit > 0.25:
             return
 
-        if remaining > 100:
+        if remaining > 50:
             time.sleep(1)
             return
 
