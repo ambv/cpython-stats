@@ -4,11 +4,9 @@ from __future__ import annotations
 from typing import *
 
 import datetime
-import os
 import shelve
 import time
 
-from dotenv import load_dotenv
 from github import Github
 from github.NamedUser import NamedUser
 from github.PullRequest import PullRequest
@@ -17,23 +15,19 @@ from rich.progress import Progress, TaskID, TextColumn, BarColumn, TimeRemaining
 
 from . import models as m
 from . import console
+from . import env
 
 
 print = console.print
 
 
-load_dotenv()
-GITHUB_API_TOKEN = os.environ["GITHUB_API_TOKEN"]
-STATS_SHELVE_PATH = os.environ["STATS_SHELVE_PATH"]
-
-
 def main() -> None:
-    with shelve.open(STATS_SHELVE_PATH, protocol=4, writeback=True) as db:
+    with shelve.open(env.STATS_SHELVE_PATH, protocol=4, writeback=True) as db:
         update_db(db)
 
 
 def update_db(db: shelve.Shelf) -> None:
-    gh = Github(GITHUB_API_TOKEN)
+    gh = Github(env.GITHUB_API_TOKEN)
     cpython = gh.get_repo("python/cpython")
     prs = cpython.get_pulls(state="all")
     total = prs.totalCount
