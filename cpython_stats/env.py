@@ -10,3 +10,4 @@ from dotenv import load_dotenv
 load_dotenv()
 GITHUB_API_TOKEN = os.environ["GITHUB_API_TOKEN"]
 STATS_SHELVE_PATH = os.environ["STATS_SHELVE_PATH"]
+STATS_SQLITE_PATH = os.environ["STATS_SQLITE_PATH"]
