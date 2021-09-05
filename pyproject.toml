@@ -10,6 +10,7 @@ PyGithub = "^1.55"
 python-dotenv = "^0.19.0"
 rich = "^10.7.0"
 python-dateutil = "^2.8.2"
+sqlite-utils = "^3.17"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
