@@ -43,6 +43,7 @@ class Change:
     opened_at: datetime | None
     merged_at: datetime | None
     closed_at: datetime | None
+    updated_at: datetime | None
 
     commit_id: SHA1 = NotMerged
     pr_id: PR_ID = UnknownPR

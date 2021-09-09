@@ -7,6 +7,7 @@ import datetime
 import shelve
 import time
 
+from dateutil.parser import parse as dt_parse
 from github import Github
 from github.NamedUser import NamedUser
 from github.PullRequest import PullRequest
@@ -22,7 +23,7 @@ print = console.print
 
 
 def main() -> None:
-    with shelve.open(env.STATS_SHELVE_PATH, protocol=4, writeback=True) as db:
+    with shelve.open(env.STATS_SHELVE_PATH, protocol=4) as db:
         update_db(db)
 
 
@@ -48,17 +49,44 @@ def update_db(db: shelve.Shelf) -> None:
                 old = db[pr_id]
             except KeyError:
                 old = None
-            if old:
-                progress.update(task, description=f"Skipping {pr_id}")
-                # print(f"Updating {pr_id}")
-                # update_in_place(old, pr)
-            else:
-                progress.update(task, description=f"Importing {pr_id}")
-                try:
+
+            try:
+                if old:
+                    if is_up_to_date(old, pr):
+                        progress.update(task, description=f"Skipping {pr_id}")
+                    else:
+                        progress.update(
+                            task, description=f"[yellow]Updating {pr_id}[/yellow]"
+                        )
+                        update_in_place(old, pr)
+                        db[pr_id] = old
+                else:
+                    progress.update(
+                        task, description=f"[green]Importing {pr_id}[/green]"
+                    )
                     db[pr_id] = new_change_from(pr)
-                except Exception as exc:
-                    print(f"[bold red]warning[/bold red]: skipped {pr_id} due to ", exc)
+            except Exception as exc:
+                print(f"[bold red]warning[/bold red]: skipped {pr_id} due to error")
+                print(exc)
             progress.advance(task)
+
+
+def is_up_to_date(old: m.Change, pr: PullRequest) -> bool:
+    if pr.updated_at:
+        return old.updated_at == pr.updated_at
+
+    elif pr.last_modified is not None:
+        last_mod = dt_parse(pr.last_modified, ignoretz=True)
+        if old.merged_at and last_mod == old.merged_at:
+            return True
+
+        if old.closed_at and last_mod == old.closed_at:
+            return True
+
+    else:
+        raise ValueError(f"{old.pr_id} doesn't have [bold]last_modified[/bold] set")
+
+    return False
 
 
 def update_in_place(old: m.Change, pr: PullRequest) -> None:
@@ -116,10 +144,7 @@ def new_change_from(pr: PullRequest) -> m.Change:
             continue
         comments.append(m.Comment(author=author, text=comment.body))
 
-    labels: set[m.Label] = {
-        m.Label(label.name)
-        for label in pr.get_labels()
-    }
+    labels: set[m.Label] = {m.Label(label.name) for label in pr.get_labels()}
 
     return m.Change(
         pr_id=m.PR_ID(pr.number),
@@ -131,6 +156,7 @@ def new_change_from(pr: PullRequest) -> m.Change:
         opened_at=pr.created_at,
         merged_at=pr.merged_at,
         closed_at=pr.closed_at,
+        updated_at=pr.updated_at,
         comments=comments,
         labels=labels,
     )
@@ -148,7 +174,13 @@ def maybe_user(nu: NamedUser | None) -> m.User:
 
 def nice(gh: Github, progress: Progress, task: TaskID) -> None:
     while True:
-        rl = gh.get_rate_limit()
+        while True:
+            try:
+                rl = gh.get_rate_limit()
+            except Exception:
+                time.sleep(1)
+            else:
+                break
         remaining = rl.core.remaining
         limit = rl.core.limit
         reset_ts = rl.core.reset
