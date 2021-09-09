@@ -60,6 +60,7 @@ def convert_db(db: shelve.Shelf) -> None:
             [{"label": label} for label in sorted(labels)],
         )
 
+    sqlite.index_foreign_keys()
     print("done.")
 
 
