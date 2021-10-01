@@ -520,6 +520,14 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "types-python-dateutil"
+version = "2.8.0"
+description = "Typing stubs for python-dateutil"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "typing-extensions"
 version = "3.10.0.2"
 description = "Backported and Experimental Type Hints for Python 3.5+"
@@ -559,7 +567,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "4d3209b7c8e51b342b684cc6541a966cc9114a51f1a9627acef7aeb9cef88740"
+content-hash = "bc4bbd0cc9e96658822705c269c964f2f3f75f0256fd5495515e29bdd51cef17"
 
 [metadata.files]
 atomicwrites = [
@@ -859,6 +867,10 @@ toml = [
 tomli = [
     {file = "tomli-1.2.1-py3-none-any.whl", hash = "sha256:8dd0e9524d6f386271a36b41dbf6c57d8e32fd96fd22b6584679dc569d20899f"},
     {file = "tomli-1.2.1.tar.gz", hash = "sha256:a5b75cb6f3968abb47af1b40c1819dc519ea82bcc065776a866e8d74c5ca9442"},
+]
+types-python-dateutil = [
+    {file = "types-python-dateutil-2.8.0.tar.gz", hash = "sha256:540c6c53c3a52433d7088254e3afdc3f6c86b5ae452aaa1b796c26d01c9fd73c"},
+    {file = "types_python_dateutil-2.8.0-py3-none-any.whl", hash = "sha256:9954d87dc982344bb2aad73a7fe505bdca72f89088ef653c4c40f52649183437"},
 ]
 typing-extensions = [
     {file = "typing_extensions-3.10.0.2-py2-none-any.whl", hash = "sha256:d8226d10bc02a29bcc81df19a26e56a9647f8b0a6d4a83924139f4a8b01f17b7"},
