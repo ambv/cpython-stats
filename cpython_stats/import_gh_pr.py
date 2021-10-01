@@ -3,20 +3,19 @@
 from __future__ import annotations
 from typing import *
 
-import datetime
 import shelve
-import time
 
 from dateutil.parser import parse as dt_parse
 from github import Github
 from github.NamedUser import NamedUser
 from github.PullRequest import PullRequest
 from github.GithubException import IncompletableObject
-from rich.progress import Progress, TaskID, TextColumn, BarColumn, TimeRemainingColumn
+from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn
 
 from . import models as m
 from . import console
 from . import env
+from . import gh_utils
 
 
 print = console.print
@@ -42,7 +41,7 @@ def update_db(db: shelve.Shelf) -> None:
     ) as progress:
         task = progress.add_task("Import in progress...", total=total)
         for pr in prs:
-            nice(gh, progress, task)
+            gh_utils.nice(gh, progress, task)
             pr_id = f"GH-{pr.number}"
             old: m.Change | None
             try:
@@ -170,37 +169,6 @@ def maybe_user(nu: NamedUser | None) -> m.User:
         return m.User(nu.login)
     except IncompletableObject:
         return m.NoUser
-
-
-def nice(gh: Github, progress: Progress, task: TaskID) -> None:
-    while True:
-        while True:
-            try:
-                rl = gh.get_rate_limit()
-            except Exception:
-                time.sleep(1)
-            else:
-                break
-        remaining = rl.core.remaining
-        limit = rl.core.limit
-        reset_ts = rl.core.reset
-        if remaining / limit > 0.25:
-            return
-
-        if remaining > 50:
-            time.sleep(1)
-            return
-
-        delta = (reset_ts - datetime.datetime.utcnow()).seconds
-        for i in range(max(delta, 30)):
-            progress.update(
-                task,
-                description=(
-                    f"sleeping for [bold blue]{delta-i}[/bold blue] seconds"
-                    f" ([red]{remaining}/[bold]{limit}[/bold][/red] requests remaining)"
-                ),
-            )
-            time.sleep(1)
 
 
 if __name__ == "__main__":
