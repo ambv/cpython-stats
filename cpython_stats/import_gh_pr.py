@@ -41,7 +41,7 @@ def update_db(db: shelve.Shelf) -> None:
     ) as progress:
         task = progress.add_task("Import in progress...", total=total)
         for pr in prs:
-            gh_utils.nice(gh, progress, task)
+            gh_utils.nice(gh, "core", progress, task)
             pr_id = f"GH-{pr.number}"
             old: m.Change | None
             try:
