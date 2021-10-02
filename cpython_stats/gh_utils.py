@@ -28,31 +28,17 @@ def find_user(email: str, /, *, gh: Github, progress: Progress, task: TaskID) ->
     if "@" not in email:
         raise ValueError(f"Invalid email passed: {email}")
 
-    result = None
-
     sqlite = Database(env.CACHE_SQLITE_PATH)
     try:
-        cache_rows = list(
-            sqlite.query(
-                "SELECT gh_user FROM email_to_gh_user WHERE email = :email",
-                {"email": email},
-            )
-        )
-    except sqlite3.OperationalError:
-        # cache not created yet
-        cache_rows = []
-
-    for row in cache_rows:
-        result = row["gh_user"]
-        break
-    else:
+        result = _get_cached_gh_user_for_email(sqlite, email)
+    except LookupError:
         nice(gh, "search", progress, task, precise=True)
         results = []
         for named_user in gh.search_users(f"{email} in:email"):
             nice(gh, "core", progress, task, precise=True)
             results.append(named_user.login)
         if len(results) > 1:
-            all_names = ", ". join(results)
+            all_names = ", ".join(results)
             raise ValueError(f"Multiple users returned for {email!r}: {all_names}")
         elif len(results) == 1:
             result = results[0]
@@ -83,6 +69,29 @@ def maybe_github_ui_email(email: str) -> str:
             return user
 
     raise ValueError("e-mail address doesn't match")
+
+
+def _get_cached_gh_user_for_email(sqlite: Database, email: str) -> str | None:
+    """Return cached Github username.
+
+    Can be None if the Github API doesn't recognize the email.
+    If nothing is cached, raise LookupError.
+    """
+    try:
+        cache_rows = list(
+            sqlite.query(
+                "SELECT gh_user FROM email_to_gh_user WHERE email = :email",
+                {"email": email},
+            )
+        )
+    except sqlite3.OperationalError:
+        # cache not created yet
+        cache_rows = []
+
+    for row in cache_rows:
+        return row["gh_user"]
+
+    raise LookupError(email)
 
 
 def nice(
@@ -117,7 +126,7 @@ def nice(
             time.sleep(1)
             return
 
-        delta = (reset_ts - datetime.datetime.utcnow())
+        delta = reset_ts - datetime.datetime.utcnow()
         if delta.days < 0:
             time.sleep(1)
             return
