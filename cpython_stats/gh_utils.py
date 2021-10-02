@@ -7,11 +7,12 @@ import datetime
 import sqlite3
 import time
 
-from github import Github, GithubException
+from github import Github, GithubException, Repository
 from rich.progress import Progress, TaskID
 from sqlite_utils import Database
 
 from . import env
+from . import models as m
 
 
 RateLimitDomain = Literal["core", "search", "graphql"]
@@ -48,6 +49,50 @@ def find_user(email: str, /, *, gh: Github, progress: Progress, task: TaskID) ->
 
     if result is None:
         raise LookupError(email)
+
+    return result
+
+
+def most_common_user_in_prs(
+    email: str,
+    prs: set[m.PR_ID],
+    *,
+    gh: Github,
+    repo: Repository.Repository,
+    progress: Progress,
+    task: TaskID,
+) -> str:
+    """Return the most common PR author username from a set of `prs`.
+
+    Can raise LookupError if queries of all PR IDs specified failed.
+    """
+    sqlite = Database(env.CACHE_SQLITE_PATH)
+    try:
+        result = _get_cached_gh_user_for_email(sqlite, email)
+    except LookupError:
+        result = None
+
+    if result is None:
+        pr_authors: Counter[str] = Counter()
+        for pr_id in prs:
+            nice(gh, "core", progress, task, precise=True)
+            try:
+                pr = repo.get_pull(pr_id)
+            except GithubException:
+                continue
+            pr_authors[pr.user.login] += 1
+            _most_common = pr_authors.most_common(1)[0]
+            if _most_common[1] >= 10:
+                break
+
+        if not pr_authors:
+            raise LookupError(email)
+
+        result, _ = pr_authors.most_common(1)[0]
+        sqlite.execute(
+            "DELETE FROM email_to_gh_user WHERE email = :email", {"email": email}
+        )
+        sqlite["email_to_gh_user"].insert({"email": email, "gh_user": result})
 
     return result
 
