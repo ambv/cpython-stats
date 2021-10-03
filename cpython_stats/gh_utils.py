@@ -18,7 +18,7 @@ from . import models as m
 RateLimitDomain = Literal["core", "search", "graphql"]
 
 
-def find_user(email: str, /, *, gh: Github, progress: Progress, task: TaskID) -> str:
+def find_user(email: str, /, *, gh: Github, progress: Progress, task: TaskID) -> m.User:
     """Return a Github username from `email`."""
 
     try:
@@ -43,6 +43,11 @@ def find_user(email: str, /, *, gh: Github, progress: Progress, task: TaskID) ->
             raise ValueError(f"Multiple users returned for {email!r}: {all_names}")
         elif len(results) == 1:
             result = results[0]
+        else:
+            # Note: this means we also cache `None` values in the sqlite database;
+            # this is deliberate. We know those e-mails are unknown to Github API and
+            # don't want to waste our rate limits re-querying those.
+            result = None
         table = sqlite["email_to_gh_user"]
         table.insert({"email": email, "gh_user": result})
         table.create_index(["email"], unique=True, if_not_exists=True)
@@ -50,7 +55,7 @@ def find_user(email: str, /, *, gh: Github, progress: Progress, task: TaskID) ->
     if result is None:
         raise LookupError(email)
 
-    return result
+    return m.User(result)
 
 
 def most_common_user_in_prs(
@@ -61,7 +66,7 @@ def most_common_user_in_prs(
     repo: Repository.Repository,
     progress: Progress,
     task: TaskID,
-) -> str:
+) -> m.User:
     """Return the most common PR author username from a set of `prs`.
 
     Can raise LookupError if queries of all PR IDs specified failed.
@@ -94,10 +99,10 @@ def most_common_user_in_prs(
         )
         sqlite["email_to_gh_user"].insert({"email": email, "gh_user": result})
 
-    return result
+    return m.User(result)
 
 
-def maybe_github_ui_email(email: str) -> str:
+def maybe_github_ui_email(email: str) -> m.User:
     # example: 31488909+miss-islington@users.noreply.github.com
     domain = "@users.noreply.github.com"
     if email.endswith(domain):
@@ -109,9 +114,9 @@ def maybe_github_ui_email(email: str) -> str:
             except ValueError:
                 pass
             else:
-                return username
+                return m.User(username)
         else:
-            return user
+            return m.User(user)
 
     raise ValueError("e-mail address doesn't match")
 
