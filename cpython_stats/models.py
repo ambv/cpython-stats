@@ -10,7 +10,7 @@ from datetime import datetime
 PR_ID = NewType("PR_ID", int)
 SHA1 = NewType("SHA1", str)
 Label = NewType("Label", str)
-User = NewType("User", str)  # usually GitHub usernames, sometimes e-mails
+User = NewType("User", str)  # a GitHub username, not an e-mail
 Branch = NewType("Branch", str)
 ChangeState = Literal["open", "merged", "closed"]  # closed == not merged
 NotMerged = SHA1("")
