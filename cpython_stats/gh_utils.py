@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import *
 
 import datetime
+import shelve
 import sqlite3
 import time
 
@@ -191,3 +192,15 @@ def nice(
                 ),
             )
             time.sleep(1)
+
+
+def build_commit_id_to_pr_index(db: shelve.Shelf) -> dict[m.SHA1, m.PR_ID]:
+    change: m.Change
+    result: dict[m.SHA1, m.PR_ID] = {}
+
+    for change in db.values():
+        if change.commit_id == m.NotMerged or change.pr_id == m.UnknownPR:
+            continue
+        result[change.commit_id] = change.pr_id
+
+    return result
