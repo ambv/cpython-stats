@@ -14,11 +14,13 @@ poetry install
 # Create a .env file
 cat >.env
 GITHUB_API_TOKEN = ghp_aBCdEFgHIjKLmNOpQRsTUvXYz12345678901
-STATS_SHELVE_PATH = .local/shelve.db
 <CTRL-D>
 
-# Import PRs
+# Import Github PRs
 python -m cpython_stats.import_gh_pr
+
+# Import commits from python/cpython Git repo
+python -m cpython_stats.import_git_repo
 ```
 
 ---
