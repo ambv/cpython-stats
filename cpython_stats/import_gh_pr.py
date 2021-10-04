@@ -145,6 +145,8 @@ def new_change_from(pr: PullRequest) -> m.Change:
 
     labels: set[m.Label] = {m.Label(label.name) for label in pr.get_labels()}
 
+    commit_id = m.SHA1(pr.merge_commit_sha) if pr.merged else m.NotMerged
+
     return m.Change(
         pr_id=m.PR_ID(pr.number),
         title=pr.title,
@@ -156,6 +158,7 @@ def new_change_from(pr: PullRequest) -> m.Change:
         merged_at=pr.merged_at,
         closed_at=pr.closed_at,
         updated_at=pr.updated_at,
+        commit_id=commit_id,
         comments=comments,
         labels=labels,
     )
