@@ -37,25 +37,22 @@ def convert_db(db: shelve.Shelf) -> None:
         if not item.pr_id:
             raise NotImplementedError("Non-PR changes not implemented yet.")
         else:
-            change["kind"] = "GH"
-            change["id"] = item.pr_id
+            change["id"] = f"GH-{item.pr_id}"
 
         changes_table.insert(
             change,
-            pk=("kind", "id"),
-            column_order=("kind", "id", "branch", "title"),
+            pk="id",
+            column_order=("id", "branch", "title"),
         )
-        insert_foreign_data(files_table, change["kind"], change["id"], files)
+        insert_foreign_data(files_table, change["id"], files)
         insert_foreign_data(
             contributors_table,
-            change["kind"],
             change["id"],
             [{"name": contributor} for contributor in sorted(contributors)],
         )
-        insert_foreign_data(comments_table, change["kind"], change["id"], comments)
+        insert_foreign_data(comments_table, change["id"], comments)
         insert_foreign_data(
             labels_table,
-            change["kind"],
             change["id"],
             [{"label": label} for label in sorted(labels)],
         )
@@ -65,15 +62,13 @@ def convert_db(db: shelve.Shelf) -> None:
 
 
 def insert_foreign_data(
-    table: Table, kind: str, id: int, data: Sequence[Dict[str, Any]]
+    table: Table, id: int, data: Sequence[Dict[str, Any]]
 ) -> None:
     fks = [
-        ("change_kind", "changes", "kind"),
         ("change_id", "changes", "id"),
     ]
     for item in data:
         item["id"] = (table.last_pk or 0) + 1
-        item["change_kind"] = kind
         item["change_id"] = id
         table.insert(item, pk="id", foreign_keys=fks)
 
