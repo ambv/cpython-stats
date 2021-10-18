@@ -145,6 +145,21 @@ def _get_cached_gh_user_for_email(sqlite: Database, email: str) -> str | None:
     raise LookupError(email)
 
 
+def get_core_devs_from_cache() -> set[m.User]:
+    sqlite = Database(env.CACHE_SQLITE_PATH)
+    try:
+        cache_rows = list(
+            sqlite.query(
+                "SELECT DISTINCT gh_user FROM email_to_gh_user WHERE is_core_dev=1"
+            )
+        )
+    except sqlite3.OperationalError:
+        # cache not created yet
+        cache_rows = []
+
+    return set(row["gh_user"] for row in cache_rows)
+
+
 def nice(
     gh: Github,
     domain: RateLimitDomain,
