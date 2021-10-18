@@ -35,9 +35,25 @@ def main() -> int:
             gh_user = core_dev["github"]
         except KeyError:
             continue
-        print(f"Updating {name}")
+        print(f"Updating [bold]{name}[/bold]")
         update_db(sqlite, email, gh_user)
 
+    for core_dev in core_devs["core-dev"]:
+        try:
+            gh_user = core_dev["github"]
+        except KeyError:
+            continue
+
+        result = sqlite.execute(
+            "UPDATE email_to_gh_user SET is_core_dev=1 WHERE gh_user = :gh_user",
+            {"gh_user": gh_user},
+        )
+        print(
+            f"Marking [bold]{gh_user!r}[/bold] as a core dev:"
+            f" {result.rowcount} entries updated"
+        )
+
+    sqlite.execute("COMMIT")
     return 0
 
 
@@ -63,7 +79,7 @@ def update_db(sqlite: Database, email: str, gh_user: str) -> None:
         )
 
     table = sqlite["email_to_gh_user"]
-    table.insert({"email": email, "gh_user": gh_user})
+    table.insert({"email": email, "gh_user": gh_user, "is_core_dev": True})
 
 
 if __name__ == "__main__":
