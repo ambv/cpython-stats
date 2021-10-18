@@ -38,7 +38,9 @@ class Change:
     description: str
     files: list[File]
     branch: Branch
-    contributors: set[User]  # only: PR authors, commit authors, commit committers
+    authors: set[User]  # only PR authors
+    contributors: set[User]  # like authors + commit authors, committers, and mergers
+    merged_by: User | None
 
     opened_at: datetime | None
     merged_at: datetime | None

@@ -67,7 +67,8 @@ def update_db(db: shelve.Shelf) -> None:
             except Exception as exc:
                 print(f"[bold red]warning[/bold red]: skipped {pr_id} due to error")
                 print(exc)
-            progress.advance(task)
+            finally:
+                progress.advance(task)
 
 
 def is_up_to_date(old: m.Change, pr: PullRequest) -> bool:
@@ -112,8 +113,10 @@ def new_change_from(pr: PullRequest) -> m.Change:
         for file in pr.get_files()
     ]
 
+    authors: set[m.User] = set()
     contributors: set[m.User] = set()
     if user := maybe_user(pr.user):
+        authors.add(user)
         contributors.add(user)
     if user := maybe_user(pr.merged_by):
         contributors.add(user)
@@ -153,11 +156,13 @@ def new_change_from(pr: PullRequest) -> m.Change:
         description=pr.body,
         files=files,
         branch=m.Branch(pr.base.ref),
+        authors=authors,
         contributors=contributors,
         opened_at=pr.created_at,
         merged_at=pr.merged_at,
         closed_at=pr.closed_at,
         updated_at=pr.updated_at,
+        merged_by=pr.merged_by,
         commit_id=commit_id,
         comments=comments,
         labels=labels,
