@@ -11,15 +11,17 @@ from sqlite_utils import Database
 from sqlite_utils.db import Table
 
 from . import env
+from . import gh_utils
 from . import models
 
 
 def main() -> None:
+    core_devs = gh_utils.get_core_devs_from_cache()
     with shelve.open(env.STATS_SHELVE_PATH, protocol=4) as db:
-        convert_db(db)
+        convert_db(db, core_devs)
 
 
-def convert_db(db: shelve.Shelf) -> None:
+def convert_db(db: shelve.Shelf, core_devs: set[models.User]) -> None:
     sqlite = Database(env.STATS_SQLITE_PATH)
     changes_table = sqlite["changes"]
     files_table = sqlite["files"]
@@ -31,6 +33,8 @@ def convert_db(db: shelve.Shelf) -> None:
         change = asdict(item)
         files = change.pop("files")
         contributors = change.pop("contributors")
+        authors = change.pop("authors")
+        merged_by = change.pop("merged_by")
         comments = change.pop("comments")
         labels = change.pop("labels")
 
@@ -38,6 +42,16 @@ def convert_db(db: shelve.Shelf) -> None:
             raise NotImplementedError("Non-PR changes not implemented yet.")
         else:
             change["id"] = f"GH-{item.pr_id}"
+
+        contributors_data = [
+            {
+                "name": contributor,
+                "is_pr_author": contributor in authors,
+                "did_merge_pr": contributor and contributor == merged_by,
+                "is_core_dev": contributor in core_devs,
+            }
+            for contributor in sorted(contributors)
+        ]
 
         changes_table.insert(
             change,
@@ -48,7 +62,7 @@ def convert_db(db: shelve.Shelf) -> None:
         insert_foreign_data(
             contributors_table,
             change["id"],
-            [{"name": contributor} for contributor in sorted(contributors)],
+            contributors_data,
         )
         insert_foreign_data(comments_table, change["id"], comments)
         insert_foreign_data(
@@ -61,9 +75,7 @@ def convert_db(db: shelve.Shelf) -> None:
     print("done.")
 
 
-def insert_foreign_data(
-    table: Table, id: int, data: Sequence[Dict[str, Any]]
-) -> None:
+def insert_foreign_data(table: Table, id: int, data: Sequence[Dict[str, Any]]) -> None:
     fks = [
         ("change_id", "changes", "id"),
     ]
