@@ -12,6 +12,7 @@ rich = "^10.7.0"
 python-dateutil = "^2.8.2"
 sqlite-utils = "^3.17"
 tomli = "^1.2.1"
+dulwich = "^0.20.25"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
