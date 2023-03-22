@@ -133,7 +133,7 @@ def analyze_db(db: shelve.Shelf) -> None:
             if count > 1
         )
         if not message:
-            continue
+            message = "[red]NOBODY[/red]"
 
         print(f"[bold]{cat}[/bold]: " + message)
         shown_count += 1
