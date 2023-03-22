@@ -12,10 +12,11 @@ rich = "^10.7.0"
 python-dateutil = "^2.8.2"
 sqlite-utils = "^3.17"
 tomli = "^1.2.1"
+dulwich = "^0.20.46"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
-black = "^21.7b0"
+black = "^22.10.0"
 mypy = "^0.910"
 flake8-bugbear = "^21.4.3"
 types-python-dateutil = "^2.8.0"
