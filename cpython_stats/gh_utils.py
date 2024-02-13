@@ -50,7 +50,7 @@ def find_user(email: str, /, *, gh: Github, progress: Progress, task: TaskID) ->
             # don't want to waste our rate limits re-querying those.
             result = None
         table = sqlite["email_to_gh_user"]
-        table.insert({"email": email, "gh_user": result})
+        table.insert({"email": email, "gh_user": result, "is_core_dev": 0})
         table.create_index(["email"], unique=True, if_not_exists=True)
 
     if result is None:
@@ -98,7 +98,9 @@ def most_common_user_in_prs(
         sqlite.execute(
             "DELETE FROM email_to_gh_user WHERE email = :email", {"email": email}
         )
-        sqlite["email_to_gh_user"].insert({"email": email, "gh_user": result})
+        sqlite["email_to_gh_user"].insert(
+            {"email": email, "gh_user": result, "is_core_dev": 0}
+        )
 
     return m.User(result)
 
